@@ -11,7 +11,7 @@
  * SHA256 low level APIs are deprecated for public use, but still ok for
  * internal use.
  */
-#include "include/internal/deprecated.h"
+#include "internal/deprecated.h"
 
 #include <openssl/opensslconf.h>
 
@@ -21,8 +21,8 @@
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
 #include <openssl/opensslv.h>
-#include "include/internal/endian.h"
-#include "include/crypto/sha.h"
+#include "internal/endian.h"
+#include "crypto/sha.h"
 
 int SHA224_Init(SHA256_CTX *c)
 {
@@ -139,7 +139,7 @@ void sha256_block_data_order_c(SHA256_CTX *ctx, const void *in, size_t num);
     void
     sha256_block_data_order(SHA256_CTX *ctx, const void *in, size_t num);
 
-#include "include/crypto/md32_common.h"
+#include "crypto/md32_common.h"
 
 #if !defined(SHA256_ASM) || defined(INCLUDE_C_SHA256)
 static const SHA_LONG K256[64] = {
