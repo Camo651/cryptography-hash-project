@@ -58,7 +58,7 @@ uint32_t load_32(const uint8_t *p)
 }
 
 /* One compression of a 512-bit block. FIPS 180-4 part 6.2 (SHA-256) */
-void compress(sha256_ctx *c, const uint8_t block[64]) 
+void compress(SHA256_ctx *c, const uint8_t block[64]) 
 {
     uint32_t W[64];
 
@@ -110,7 +110,7 @@ void compress(sha256_ctx *c, const uint8_t block[64])
 }
 
 /* Initialize H to H(0). FIPS 180-4 part 5.3.3 */
-void sha256_init(sha256_ctx *c)
+void SHA256_Init(SHA256_ctx *c)
 {
     for(int i = 0; i < 8; i++) 
     {
@@ -121,7 +121,7 @@ void sha256_init(sha256_ctx *c)
 }
 
 /* Absorb arbitrary-length message. Block processing per part 6.2. */
-void sha256_update(sha256_ctx *c, const void *data, size_t len)
+void SHA256_Update(SHA256_ctx *c, const void *data, size_t len)
 {
     const uint8_t *p = (const uint8_t*)data;
     c->bits += (uint64_t)len * 8;            /* track total bits, part 5 */
@@ -167,7 +167,7 @@ void sha256_update(sha256_ctx *c, const void *data, size_t len)
 }
 
 /* Finalize: padding and length encoding per FIPS 180-4 part 5, then one last compress per part 6.2. */
-void sha256_final(sha256_ctx *c, uint8_t out[32])
+void SHA256_Final(SHA256_ctx *c, uint8_t out[32])
 {
     /* Append '1' bit then k zero bits so that length ≡ 448 mod 512. part 5 */
     c->buf[c->buf_len++] = 0x80;
