@@ -74,18 +74,39 @@ void compress(sha256_ctx *c, const uint8_t block[64])
     }
 
     /* Working variables a..h initialized from current H. part 6.2 */
-    uint32_t a=c->h[0],b=c->h[1],c2=c->h[2],d=c->h[3],e=c->h[4],f=c->h[5],g=c->h[6],h=c->h[7];
+    uint32_t a  = c -> h[0],
+             b  = c -> h[1],
+             c2 = c -> h[2],
+             d  = c -> h[3],
+             e  = c -> h[4],
+             f  = c -> h[5],
+             g  = c -> h[6],
+             h  = c -> h[7];
 
     /* 64 rounds per part 6.2 using Σ0/Σ1, Ch, Maj, and K[t]. */
-    for (int i=0;i<64;i++){
+    for (int i = 0; i < 64; i++)
+    {
         uint32_t T1 = h + S1(e) + Ch(e,f,g) + K[i] + W[i];
         uint32_t T2 = S0(a) + Maj(a,b,c2);
-        h=g; g=f; f=e; e=d + T1; d=c2; c2=b; b=a; a=T1 + T2;
+        h = g; 
+        g = f; 
+        f = e; 
+        e = d + T1; 
+        d = c2; 
+        c2 = b; 
+        b = a; 
+        a = T1 + T2;
     }
 
     /* Add working vars back into state. part 6.2 */
-    c->h[0]+=a; c->h[1]+=b; c->h[2]+=c2; c->h[3]+=d;
-    c->h[4]+=e; c->h[5]+=f; c->h[6]+=g; c->h[7]+=h;
+    c -> h[0] += a; 
+    c -> h[1] += b; 
+    c -> h[2] += c2; 
+    c -> h[3] += d;
+    c -> h[4] += e; 
+    c -> h[5] += f; 
+    c -> h[6] += g; 
+    c -> h[7] +=h;
 }
 
 /* Initialize H to H(0). FIPS 180-4 part 5.3.3 */
@@ -104,15 +125,45 @@ void sha256_update(sha256_ctx *c, const void *data, size_t len)
 {
     const uint8_t *p = (const uint8_t*)data;
     c->bits += (uint64_t)len * 8;            /* track total bits, part 5 */
-    if(c->buf_len){                          /* fill leftover buffer */
+    if(c->buf_len)
+    {                          /* fill leftover buffer */
         size_t t = 64 - c->buf_len;
-        if(t > len) t = len;
-        for(size_t i=0;i<t;i++) c->buf[c->buf_len+i]=p[i];
-        c->buf_len += t; p += t; len -= t;
-        if(c->buf_len==64){ compress(c, c->buf); c->buf_len=0; }
+        if(t > len) 
+        {
+            t = len;
+        }
+        for(size_t i = 0; i < t; i++) 
+        {
+            c->buf[c->buf_len+i] = p[i];
+        }
+        
+        c->buf_len += t; 
+        p += t; 
+        len -= t;
+        
+        if(c->buf_len == 64)
+        { 
+            compress(c, c->buf); 
+            c->buf_len=0; 
+        }
     }
-    while(len >= 64){ compress(c, p); p+=64; len-=64; }
-    if(len){ for(size_t i=0;i<len;i++) c->buf[i]=p[i]; c->buf_len=len; }
+    
+    while(len >= 64)
+    { 
+        compress(c, p); 
+        p += 64; 
+        len -= 64; 
+    }
+    
+    if(len)
+    { 
+        for(size_t i = 0; i < len; i++) 
+        { 
+            c->buf[i]=p[i]; 
+        }
+
+        c->buf_len = len; 
+    }
 }
 
 /* Finalize: padding and length encoding per FIPS 180-4 part 5, then one last compress per part 6.2. */
@@ -120,18 +171,42 @@ void sha256_final(sha256_ctx *c, uint8_t out[32])
 {
     /* Append '1' bit then k zero bits so that length ≡ 448 mod 512. part 5 */
     c->buf[c->buf_len++] = 0x80;
-    if(c->buf_len > 56){ while(c->buf_len<64) c->buf[c->buf_len++]=0; compress(c,c->buf); c->buf_len=0; }
-    while(c->buf_len<56) c->buf[c->buf_len++]=0;
+    if (c->buf_len > 56)
+    { 
+        while(c->buf_len<64) 
+        {
+            c->buf[c->buf_len++]=0; 
+        }
+
+        compress(c,c->buf); 
+        c->buf_len=0; 
+    }     
+    
+    while(c->buf_len<56) 
+    {
+        c->buf[c->buf_len++]=0;
+    }
+     
 
     /* Append 64-bit big-endian length of the message. part 5 */
     uint64_t bits = c->bits;
-    for(int i=7;i>=0;i--) c->buf[56+(7-i)] = (uint8_t)(bits >> (i*8));
+    for(int i = 7; i >= 0; i--) 
+    {
+        c->buf[ 56 + (7-i)] = (uint8_t)(bits >> (i*8));
+    }
 
     compress(c,c->buf);
 
     /* Output H as big-endian 32-bit words. part 6.2 */
-    for(int i=0;i<8;i++) store_32(out+4*i, c->h[i]);
+    for(int i = 0; i < 8; i++) 
+    {
+        store_32(out + 4 * i, c -> h[i]);
+    }
 
     /* Wipe state; use explicit_bzero/memset_s if available. */
-    for(int i=0;i<sizeof *c;i++) ((volatile uint8_t*)c)[i]=0;
+    for(size_t i = 0; i < sizeof *c; i++) 
+    {    
+        ((volatile uint8_t*)c)[i]=0;
+
+    }
 }
