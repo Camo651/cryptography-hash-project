@@ -210,3 +210,25 @@ void SHA256_Final(SHA256_ctx *c, uint8_t out[32])
 
     }
 }
+
+int SHA256_Stream(FILE *fp, unsigned char out[32])
+{
+    SHA256_ctx c; 
+    SHA256_Init(&c);
+    unsigned char buf[1<<15];           // 32 KiB
+    size_t n;
+    
+    while((n=fread(buf,1,sizeof buf,fp))>0)
+    {
+        SHA256_Update(&c, buf, n);
+    }
+    
+    if (ferror(fp)) 
+    { 
+        return 0;
+    }
+    
+    SHA256_Final(&c, out);
+    
+    return 1;
+}

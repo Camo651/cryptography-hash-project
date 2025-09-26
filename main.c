@@ -1,32 +1,83 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <errno.h>
 #include <string.h>
 
 #include "clean_sha.h"
 
-void hex(const unsigned char *d, size_t n)
+void hex(const unsigned char * d)
 {
-     for(size_t i=0;i<n;i++) 
-     printf("%02x", d[i]); 
-}
-
-int main()
-{
-    // Example usage of SHA-256
-    const char *message = "Hello, World!";
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256_ctx sha256;
-
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, message, strlen(message));
-    SHA256_Final(&sha256, hash);
-
-    //printf("SHA-256 hash: ");
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
     {
-        printf("%02x", hash[i]);
+        printf("%02x", d[i]);
     }
-    printf("\n");
+}
+
+
+int hash_path(const char *path)
+{
+    unsigned char out[32];
+    FILE *fp;
+    
+    if (strcmp(path, "-") == 0)
+    {
+        fp = stdin;
+    } 
+    else 
+    {
+        fp = fopen(path, "rb");
+        if(!fp)
+        { 
+            fprintf(stderr, "error: %s: %s\n", path, strerror(errno)); 
+            return 1; 
+        }
+    }
+    
+    int ok = SHA256_Stream(fp, out);
+    
+    if (fp!=stdin) fclose(fp);
+    
+    if(!ok)
+    { 
+        fprintf(stderr, "error: read %s\n", path); 
+        return 1; 
+    }
+
+    // OpenSSL-like line
+    if (strcmp(path, "-")==0) 
+    {
+        hex(out);
+        printf("  -"); 
+        putchar('\n');    // openssl prints just hex for stdin
+    } 
+    else 
+    {
+        //printf("SHA256(%s)= ", path); 
+        hex(out);
+        printf("  %s",path); 
+        putchar('\n');
+    }
 
     return 0;
+}
+
+
+int main(int argc, char** argv)
+{
+
+    // File input
+    if (argc==1) 
+    {
+        return hash_path("-");            // read stdin
+    }
+    
+    int rc = 0;
+    
+    for(int i = 1; i < argc; i++)
+    { 
+        rc |= hash_path(argv[i]);
+    }
+
+    return rc;
+
 }

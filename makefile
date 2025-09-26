@@ -3,9 +3,9 @@ CFLAGS=-O2 -Wall -Wextra -I.
 SRC=main.c clean_sha.c
 OBJ=$(SRC:.c=.o)
 
-all: hash
-hash: $(OBJ)
+all: sha256
+sha256: $(OBJ)
 	$(CC) $(OBJ) -o $@
 
 clean:
-	rm -f $(OBJ) hash
+	rm -f $(OBJ) sha256
