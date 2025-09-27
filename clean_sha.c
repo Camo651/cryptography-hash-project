@@ -6,8 +6,8 @@
 #define Maj(x,y,z) ((x & y) ^ (x & z) ^ (y & z))    /* part 4 */
 #define S0(x) (ROR32(x,2) ^ ROR32(x,13) ^ ROR32(x,22))  /* Σ0 in part 4 */
 #define S1(x) (ROR32(x,6) ^ ROR32(x,11) ^ ROR32(x,25))  /* Σ1 in part 4 */
-#define s0(x) (ROR32(x,7) ^ ROR32(x,18) ^ ((x) >> 3))   /* sigma_0 in part 4 */
-#define s1(x) (ROR32(x,17) ^ ROR32(x,19) ^ ((x) >> 10)) /* sigma_1 in part 4 */
+#define s0(x) (ROR32(x,7) ^ ROR32(x,18) ^ ((x) >> 3))   /* small_sigma_0 in part 4 */
+#define s1(x) (ROR32(x,17) ^ ROR32(x,19) ^ ((x) >> 10)) /* small_sigma_1 in part 4 */
 
 /* Initial hash values H(0) for SHA-256: FIPS 180-4 part 5.3.3 (table) */
 const uint32_t H0[8] = 
@@ -53,8 +53,7 @@ uint32_t load_32(const uint8_t *p)
     load = load | (uint32_t)p[2] << 8;
     load = load | p[3];
     
-    return load;
-    //return ((uint32_t)p[0]<<24)|((uint32_t)p[1]<<16)|((uint32_t)p[2]<<8)|p[3]; 
+    return load; 
 }
 
 /* One compression of a 512-bit block. FIPS 180-4 part 6.2 (SHA-256) */
@@ -228,7 +227,54 @@ int SHA256_Stream(FILE *fp, unsigned char out[32])
         return 0;
     }
     
-    SHA256_Final(&c, out);
+    SHA256_Final(&c, out); 
     
     return 1;
 }
+
+/* ------------------------- Modified --------------------------------*/
+// Wrapper 
+void SHA256_Hash(const void* data, size_t len, uint8_t out[32])
+{
+    SHA256_ctx c;
+    SHA256_Init(&c);
+    SHA256_Update(&c, data, len);
+    SHA256_Final(&c, out);
+}
+
+// Double Hash: SHA256(SHA256(M))
+void SHA256_DoubleHash(const void *msg, size_t len, uint8_t out[32])
+{
+    uint8_t first_hash[32];
+    SHA256_Hash(msg, len, first_hash);
+    SHA256_Hash(first_hash, sizeof(first_hash), out);
+
+    for(size_t i = 0; i < sizeof(first_hash); i++)
+    {
+        first_hash[i] = 0;
+    }
+}
+
+// Double Hash with key:
+void SHA256_DHK(const void *key, size_t key_len, const void *msg, 
+                size_t message_len, uint8_t out[32])
+{
+    uint8_t first_hash[32];
+
+    /* first_hash = SHA256(Message) */
+    SHA256_Hash(msg, message_len, first_hash);
+
+    /* second_hash = SHA256( SHA256(Message) || Key ) */
+    SHA256_ctx c;
+    SHA256_Init(&c);
+    SHA256_Update(&c, first_hash, sizeof(first_hash));
+    SHA256_Update(&c, key, key_len);
+    SHA256_Final(&c, out);
+
+    /* clean up */
+    for (size_t i = 0; i < sizeof(first_hash); i++)
+    {
+        first_hash[i] = 0;
+    }
+}
+

@@ -17,3 +17,10 @@ void SHA256_Update(SHA256_ctx *c, const void *data, size_t len);      /* part 6.
 void SHA256_Final(SHA256_ctx *c, uint8_t out[SHA256_DIGEST_LENGTH]);  /* part 5, part 6.2 */
 // Handle File:
 int SHA256_Stream(FILE *fp, unsigned char out[32]);
+
+
+void SHA256_Hash(const void* data, size_t len, uint8_t out[32]);
+void SHA256_DoubleHash(const void *msg, size_t len, uint8_t out[32]);
+void SHA256_DHK(const void *key, size_t key_len, const void *msg, 
+                size_t message_len, uint8_t out[32]);
+
