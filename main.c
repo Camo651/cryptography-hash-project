@@ -1,9 +1,10 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <errno.h>
-#include <string.h>
+# include <stdio.h>
+# include <stdint.h>
+# include <errno.h>
+# include <string.h>
 
-#include "clean_sha.h"
+# include "clean_sha.h"
+# include "controller.h"
 
 void hex(const unsigned char * d)
 {
@@ -13,14 +14,14 @@ void hex(const unsigned char * d)
     }
 }
 
-static int parse_hex(const char *hex, uint8_t **out, size_t *outlen){
+int parse_hex(const char *hex, uint8_t **out, size_t *outlen){
     size_t L=strlen(hex); if(L==0||(L&1)) return 0;
     uint8_t *b=malloc(L/2); if(!b) return 0;
     for(size_t i=0;i<L/2;i++){ unsigned v; if(sscanf(hex+2*i,"%2x",&v)!=1){ free(b); return 0; } b[i]=(uint8_t)v; }
     *out=b; *outlen=L/2; return 1;
 }
 
-static int read_all_stdin(uint8_t **buf, size_t *len){
+int read_all_stdin(uint8_t **buf, size_t *len){
     size_t cap=1<<16, n=0; uint8_t *p=malloc(cap); if(!p) return 0;
     for(;;){
         if(n==cap){ cap<<=1; uint8_t *q=realloc(p,cap); if(!q){ free(p); return 0; } p=q; }
@@ -67,7 +68,6 @@ int hash_path(const char *path)
     } 
     else 
     {
-        //printf("SHA256(%s)= ", path); 
         hex(out);
         printf("  %s",path); 
         putchar('\n');

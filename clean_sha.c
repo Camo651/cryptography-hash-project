@@ -232,7 +232,7 @@ int SHA256_Stream(FILE *fp, unsigned char out[32])
     return 1;
 }
 
-/* ------------------------- Modified --------------------------------*/
+/* ------------------------- Modified  Functions --------------------------------*/
 // Wrapper 
 void SHA256_Hash(const void* data, size_t len, uint8_t out[32])
 {
