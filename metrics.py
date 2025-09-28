@@ -3,7 +3,8 @@ import os
 import subprocess
 import time
 
-def get_function_metrics(hash_function, input_file):
+#Time for whole document
+"""def get_function_metrics(hash_function, input_file):
   #Hash the contents of the input file and store the metrics
   hash_start_time = time.time()
   result = subprocess.run([f"./{hash_function}", input_file], stdout=subprocess.PIPE, text=True)
@@ -14,6 +15,52 @@ def get_function_metrics(hash_function, input_file):
   print(f"Execution Time: {hash_end_time - hash_start_time:.3f}s\n")
   with open(f"{input_file[:input_file.find('.')]}_hashed_with_{hash_function[:hash_function.find('.')]}.txt", "w") as output:
     output.write(result.stdout)
+    """
+
+#Time for line by line passwords
+def get_function_metrics(hash_function, input_file):
+    #Prepare output file
+    output_file = f"{input_file[:input_file.find('.')]}_hashed_with_{hash_function[:hash_function.find('.')]}".replace(".", "_") + ".txt"
+
+    total_start_time = time.time()
+    total_hashes = 0
+
+    with open(input_file, "r") as infile, open(output_file, "w") as outfile:
+        for line in infile:
+            password = line.strip()
+            if not password:
+                continue  #skip blank lines
+
+            #Time each individual hash
+            hash_start_time = time.time()
+            result = subprocess.run(
+                [f"./{hash_function}"],
+                input=password,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            hash_end_time = time.time()
+
+            elapsed = hash_end_time - hash_start_time
+            total_hashes += 1
+
+            #Save result
+            outfile.write(f"{password} -> {result.stdout.strip()} time: {elapsed:.6f}s\n")
+
+            #Print to console too
+            print(f"{password} -> {result.stdout.strip()} time: {elapsed:.6f}s")
+
+        total_end_time = time.time()
+        total_elapsed = total_end_time - total_start_time
+
+        #Save conclusion
+        outfile.write(f"\nHashed {total_hashes} passwords with {hash_function}\n")
+        outfile.write(f"Total Run Time: {total_elapsed:.6f}s\n")
+
+    #Print conclusion
+    print(f"\nHashed {total_hashes} passwords with {hash_function}")
+    print(f"Total Run Time: {total_elapsed:.6f}s")
 
 def valid_args(hfs, htf):
   for hf in hfs:
