@@ -1,5 +1,13 @@
 #include "clean_sha.h"
 
+// Probing function
+#define DEBUG 0
+void probe(const char *func_name)
+{
+    if (DEBUG)
+        printf("%s\n", func_name);
+}
+
 /* Logical functions from FIPS 180-4 part 4 (SHA-256) */
 #define ROR32(x, n) ((uint32_t)((x >> (n)) | (x << (32 - (n)))))
 #define Ch(x, y, z) ((x & y) ^ (~x & z))                  /* part 4 */
@@ -38,19 +46,23 @@ const uint32_t K[64] =
 /* Big-endian load/store for 32-bit words. Byte order per part 5 message parsing. */
 void store_32(uint8_t *p, uint32_t v)
 {
+    probe("start store_32");
     p[0] = v >> 24;
     p[1] = v >> 16;
     p[2] = v >> 8;
     p[3] = v;
+    probe("end store_32");
 }
 
 uint32_t load_32(const uint8_t *p)
 {
+    probe("start load_32");
     uint32_t load = (uint32_t)p[0] << 24;
     load = load | (uint32_t)p[1] << 16;
     load = load | (uint32_t)p[2] << 8;
     load = load | p[3];
 
+    probe("end load_32");
     return load;
     // return ((uint32_t)p[0]<<24)|((uint32_t)p[1]<<16)|((uint32_t)p[2]<<8)|p[3];
 }
@@ -61,18 +73,19 @@ void compress(SHA256_ctx *c, const uint8_t block[64])
     uint32_t W[64];
 
     /* Message schedule W[0..63]. part 6.2 and σ0/σ1 from part 4. */
-    printf("Message schedule W[0..63]:\n");
+    probe("start compress");
     for (int i = 0; i < 16; i++)
     {
+        probe("start compress.loop1");
         W[i] = load_32(block + 4 * i);
-        printf("W[%d] = %08x\n", i, W[i]);
+        probe("end compress.loop1");
     }
 
-    printf("Extending W[16..63]:\n");
     for (int i = 16; i < 64; i++)
     {
-        printf("W[%d] = s1(W[%d]) + W[%d] + s0(W[%d]) + W[%d]\n", i, i - 2, i - 7, i - 15, i - 16);
+        probe("start compress.loop2");
         W[i] = s1(W[i - 2]) + W[i - 7] + s0(W[i - 15]) + W[i - 16];
+        probe("end compress.loop2");
     }
 
     /* Working variables a..h initialized from current H. part 6.2 */
@@ -88,7 +101,7 @@ void compress(SHA256_ctx *c, const uint8_t block[64])
     /* 64 rounds per part 6.2 using Σ0/Σ1, Ch, Maj, and K[t]. */
     for (int i = 0; i < 64; i++)
     {
-        printf("Round %2d: T1 = h + S1(e) + Ch(e,f,g) + K[%2d] + W[%2d], T2 = S0(a) + Maj(a,b,c)\n", i, i, i);
+        probe("start compress.loop3");
         uint32_t T1 = h + S1(e) + Ch(e, f, g) + K[i] + W[i];
         uint32_t T2 = S0(a) + Maj(a, b, c2);
         h = g;
@@ -99,6 +112,7 @@ void compress(SHA256_ctx *c, const uint8_t block[64])
         c2 = b;
         b = a;
         a = T1 + T2;
+        probe("end compress.loop3");
     }
 
     /* Add working vars back into state. part 6.2 */
@@ -110,104 +124,120 @@ void compress(SHA256_ctx *c, const uint8_t block[64])
     c->h[5] += f;
     c->h[6] += g;
     c->h[7] += h;
+    probe("end compress");
 }
 
 /* Initialize H to H(0). FIPS 180-4 part 5.3.3 */
 void SHA256_Init(SHA256_ctx *c)
 {
+    probe("start SHA256_Init");
     for (int i = 0; i < 8; i++)
     {
+        probe("start SHA256_Init.loop");
         c->h[i] = H0[i];
+        probe("end SHA256_Init.loop");
     }
 
     c->bits = 0;
     c->buf_len = 0;
+    probe("end SHA256_Init");
 }
 
 /* Absorb arbitrary-length message. Block processing per part 6.2. */
 void SHA256_Update(SHA256_ctx *c, const void *data, size_t len)
 {
-    printf("UPDATER\n\n\n");
+    probe("start SHA256_Update");
     const uint8_t *p = (const uint8_t *)data;
     c->bits += (uint64_t)len * 8; /* track total bits, part 5 */
     if (c->buf_len)
     { /* fill leftover buffer */
+        probe("start SHA256_Update.if1");
         size_t t = 64 - c->buf_len;
-        printf("Filling leftover buffer with %zu bytes\n", t);
         if (t > len)
         {
+            probe("start SHA256_Update.if1.if1");
             t = len;
+            probe("end SHA256_Update.if1.if1");
         }
-        printf("Actually using %zu bytes to fill\n", t);
         for (size_t i = 0; i < t; i++)
         {
-            printf("Filling buffer[%zu] with %02x\n", c->buf_len + i, p[i]);
+            probe("start SHA256_Update.if1.loop1");
             c->buf[c->buf_len + i] = p[i];
+            probe("end SHA256_Update.if1.loop1");
         }
 
         c->buf_len += t;
         p += t;
         len -= t;
-        printf("Buffer length after filling: %zu\n", c->buf_len);
         if (c->buf_len == 64)
         {
+            probe("start SHA256_Update.if1.if2");
             compress(c, c->buf);
             c->buf_len = 0;
+            probe("end SHA256_Update.if1.if2");
         }
+        probe("end SHA256_Update.if1");
     }
-    printf("Processing %zu full blocks\n", len / 64);
     while (len >= 64)
     {
-        printf("Processing block %zu\n", (len / 64));
+        probe("start SHA256_Update.loop1");
         compress(c, p);
         p += 64;
         len -= 64;
+        probe("end SHA256_Update.loop1");
     }
 
-    printf("Storing %zu leftover bytes in buffer\n", len);
     if (len)
     {
+        probe("start SHA256_Update.if2");
         for (size_t i = 0; i < len; i++)
         {
-            printf("Storing byte %02x at buffer[%zu]\n", p[i], i);
+            probe("start SHA256_Update.if2.loop1");
             c->buf[i] = p[i];
+            probe("end SHA256_Update.if2.loop1");
         }
 
         c->buf_len = len;
+        probe("end SHA256_Update.if2");
     }
+    probe("end SHA256_Update");
 }
 
 /* Finalize: padding and length encoding per FIPS 180-4 part 5, then one last compress per part 6.2. */
 void SHA256_Final(SHA256_ctx *c, uint8_t out[32])
 {
-    printf("FINALIZER\n\n\n");
+    probe("start SHA256_Final");
     /* Append '1' bit then k zero bits so that length ≡ 448 mod 512. part 5 */
-    printf("Finalizing with buffer length %zu\n", c->buf_len);
     c->buf[c->buf_len++] = 0x80;
     if (c->buf_len > 56)
     {
+        probe("start SHA256_Final.if1");
         while (c->buf_len < 64)
         {
-            printf("Padding with zero at buffer[%zu]\n", c->buf_len);
+            probe("start SHA256_Final.if1.loop1");
             c->buf[c->buf_len++] = 0;
+            probe("end SHA256_Final.if1.loop1");
         }
 
         compress(c, c->buf);
         c->buf_len = 0;
+        probe("end SHA256_Final.if1");
     }
 
     while (c->buf_len < 56)
     {
-        printf("Padding with zero at buffer[%zu]\n", c->buf_len);
+        probe("start SHA256_Final.loop1");
         c->buf[c->buf_len++] = 0;
+        probe("end SHA256_Final.loop1");
     }
 
     /* Append 64-bit big-endian length of the message. part 5 */
     uint64_t bits = c->bits;
     for (int i = 7; i >= 0; i--)
     {
-        printf("Storing length byte %02x at buffer[%d]\n", (uint8_t)(bits >> (i * 8)), 56 + (7 - i));
+        probe("start SHA256_Final.loop2");
         c->buf[56 + (7 - i)] = (uint8_t)(bits >> (i * 8));
+        probe("end SHA256_Final.loop2");
     }
 
     compress(c, c->buf);
@@ -215,20 +245,24 @@ void SHA256_Final(SHA256_ctx *c, uint8_t out[32])
     /* Output H as big-endian 32-bit words. part 6.2 */
     for (int i = 0; i < 8; i++)
     {
-        printf("Storing hash byte %02x at output[%d]\n", (uint8_t)(c->h[i] >> 24), 4 * i);
+        probe("start SHA256_Final.loop3");
         store_32(out + 4 * i, c->h[i]);
+        probe("end SHA256_Final.loop3");
     }
 
     /* Wipe state; use explicit_bzero/memset_s if available. */
     for (size_t i = 0; i < sizeof *c; i++)
     {
-        printf("Wiping state byte %02x at buffer[%zu]\n", ((uint8_t *)c)[i], i);
+        probe("start SHA256_Final.loop4");
         ((volatile uint8_t *)c)[i] = 0;
+        probe("end SHA256_Final.loop4");
     }
+    probe("end SHA256_Final");
 }
 
 int SHA256_Stream(FILE *fp, unsigned char out[32])
 {
+    probe("start SHA256_Stream");
     SHA256_ctx c;
     SHA256_Init(&c);
     unsigned char buf[1 << 15]; // 32 KiB
@@ -236,16 +270,18 @@ int SHA256_Stream(FILE *fp, unsigned char out[32])
 
     while ((n = fread(buf, 1, sizeof buf, fp)) > 0)
     {
-        printf("Read %zu bytes\n", n);
+        probe("start SHA256_Stream.loop1");
         SHA256_Update(&c, buf, n);
+        probe("end SHA256_Stream.loop1");
     }
 
     if (ferror(fp))
     {
+        probe("end SHA256_Stream");
         return 0;
     }
 
     SHA256_Final(&c, out);
-
+    probe("end SHA256_Stream");
     return 1;
 }
