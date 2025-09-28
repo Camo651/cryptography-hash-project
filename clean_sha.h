@@ -4,8 +4,6 @@
 
 #define SHA256_DIGEST_LENGTH 32 /* FIPS 180-4 part 6.2 */
 
-int verbose = 0; // Global verbosity flag for debugging
-
 typedef struct
 {
     uint32_t h[8];   /* H registers, FIPS 180-4 part 6.2 */
