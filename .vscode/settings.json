@@ -55,17 +55,17 @@
   "C_Cpp_Runner.useLeakSanitizer": false,
   "C_Cpp_Runner.showCompilationTime": false,
   "C_Cpp_Runner.useLinkTimeOptimization": false,
-"C_Cpp_Runner.msvcSecureNoWarnings": false,
-"files.associations": {
-  "*.embeddedhtml": "html",
-  "*.rmd": "markdown",
-  "deprecated.h": "c",
-  "opensslconf.h": "c",
-  "sha.h": "c",
-  "endian.h": "c",
-  "common.h": "c",
-  "stdint.h": "c",
-  "stdio.h": "c",
-  "errno.h": "c"
-}
+  "C_Cpp_Runner.msvcSecureNoWarnings": false,
+  "files.associations": {
+    "*.embeddedhtml": "html",
+    "*.rmd": "markdown",
+    "deprecated.h": "c",
+    "opensslconf.h": "c",
+    "sha.h": "c",
+    "endian.h": "c",
+    "common.h": "c",
+    "stdint.h": "c",
+    "stdio.h": "c",
+    "errno.h": "c"
+  }
 }
