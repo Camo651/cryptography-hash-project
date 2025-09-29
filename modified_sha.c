@@ -1,4 +1,4 @@
-#include "clean_sha.h"
+#include "modified_sha.h"
 
 /* Logical functions from FIPS 180-4 part 4 (SHA-256) */
 #define ROR32(x,n) ((uint32_t)((x >> (n)) | (x << (32-(n)))))
@@ -56,20 +56,14 @@ uint32_t load_32(const uint8_t *p)
     return load; 
 }
 
-/* One compression of a 512-bit block. FIPS 180-4 part 6.2 (SHA-256) */
-void compress(SHA256_ctx *c, const uint8_t block[64]) 
+void compress_imp(SHA256_ctx *c, const uint8_t block[64]) 
 {
-    uint32_t W[64];
+    uint32_t W[16];
 
     /* Message schedule W[0..63]. part 6.2 and σ0/σ1 from part 4. */
     for (int i = 0; i < 16; i++) 
     {    
-        W[i] = load_32(block + 4*i);
-    }
-    
-    for (int i=16;i<64;i++) 
-    {
-        W[i]=s1(W[i-2]) + W[i-7] + s0(W[i-15]) + W[i-16];
+        W[i] = load_32(block + 4*i);   // W[0..15]
     }
 
     /* Working variables a..h initialized from current H. part 6.2 */
@@ -85,7 +79,21 @@ void compress(SHA256_ctx *c, const uint8_t block[64])
     /* 64 rounds per part 6.2 using Σ0/Σ1, Ch, Maj, and K[t]. */
     for (int i = 0; i < 64; i++)
     {
-        uint32_t T1 = h + S1(e) + Ch(e,f,g) + K[i] + W[i];
+        uint32_t W_i;
+        if (i < 16)
+        {
+            W_i = W[i];
+        }
+        else
+        {
+            int temp = i & 15; // slot holding for W[i-16]
+            uint32_t w15 = W[(i - 15) & 15];
+            uint32_t w2 = W[(i - 2) & 15];
+            W_i = s1(w2) + W[(i - 7) & 15] + s0(w15) + W[temp];
+            W[temp] = W_i;
+        }
+
+        uint32_t T1 = h + S1(e) + Ch(e,f,g) + K[i] + W_i;
         uint32_t T2 = S0(a) + Maj(a,b,c2);
         h = g; 
         g = f; 
@@ -142,14 +150,14 @@ void SHA256_Update(SHA256_ctx *c, const void *data, size_t len)
         
         if(c->buf_len == 64)
         { 
-            compress(c, c->buf); 
+            compress_imp(c, c->buf); 
             c->buf_len=0; 
         }
     }
     
     while(len >= 64)
     { 
-        compress(c, p); 
+        compress_imp(c, p); 
         p += 64; 
         len -= 64; 
     }
@@ -177,7 +185,7 @@ void SHA256_Final(SHA256_ctx *c, uint8_t out[32])
             c->buf[c->buf_len++]=0; 
         }
 
-        compress(c,c->buf); 
+        compress_imp(c,c->buf); 
         c->buf_len=0; 
     }     
     
@@ -193,7 +201,7 @@ void SHA256_Final(SHA256_ctx *c, uint8_t out[32])
         c->buf[ 56 + (7-i)] = (uint8_t)(bits >> (i*8));
     }
 
-    compress(c,c->buf);
+    compress_imp(c,c->buf);
 
     /* Output H as big-endian 32-bit words. part 6.2 */
     for(int i = 0; i < 8; i++) 
@@ -231,3 +239,38 @@ int SHA256_Stream(FILE *fp, unsigned char out[32])
     return 1;
 }
 
+/* ------------------------- Modified  Functions --------------------------------*/
+// Wrapper 
+void SHA256_Hash(const void* data, size_t len, uint8_t out[32])
+{
+    SHA256_ctx c;
+    SHA256_Init(&c);
+    SHA256_Update(&c, data, len);
+    SHA256_Final(&c, out);
+}
+
+int SHA256_DHK_Stream(FILE *fp, const void *key, size_t key_len, uint8_t out[32]) {
+    if (key_len == 0)
+    {
+
+
+        return 0;                 // optional guard
+    }
+    uint8_t first_hash[32];
+
+    if (!SHA256_Stream(fp, first_hash))
+    {
+        fprintf(stderr, "Key cannot be empty\n");
+        return 0;    // one pass over the file
+    }
+
+    SHA256_ctx c; 
+    SHA256_Init(&c);
+    SHA256_Update(&c, first_hash, sizeof first_hash);
+    SHA256_Update(&c, key, key_len);
+    SHA256_Final(&c, out);
+
+    // wipe
+    for (size_t i = 0; i < sizeof first_hash; i++) first_hash[i] = 0;
+    return 1;
+}
