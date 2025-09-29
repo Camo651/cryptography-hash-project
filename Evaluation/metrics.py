@@ -1,55 +1,69 @@
 import argparse
 import os
+import psutil
 import subprocess
 import time
-
-#Time for whole document
-"""def get_function_metrics(hash_function, input_file):
-  #Hash the contents of the input file and store the metrics
-  hash_start_time = time.time()
-  result = subprocess.run([f"./{hash_function}", input_file], stdout=subprocess.PIPE, text=True)
-  hash_end_time = time.time()
-
-  #Print and save the results
-  print(f"Output: \n{result.stdout}")
-  print(f"Execution Time: {hash_end_time - hash_start_time:.3f}s\n")
-  with open(f"{input_file[:input_file.find('.')]}_hashed_with_{hash_function[:hash_function.find('.')]}.txt", "w") as output:
-    output.write(result.stdout)
-    """
 
 #Time for line by line passwords
 def get_function_metrics(hash_function, input_file):
     #Prepare output file
-    output_file = f"{input_file[:input_file.find('.')]}_hashed_with_{hash_function[:hash_function.find('.')]}".replace(".", "_") + ".txt"
+    hash_file_name = hash_function[max(0, hash_function.rfind(os.path.sep)+1):hash_function.rfind('.')]
+    input_file_name = input_file[max(0, input_file.rfind(os.path.sep)+1):input_file.rfind('.')]
+    output_file = f"{input_file_name}_hashed_with_{hash_file_name}.txt"
+    print(f"Saving the results to: {output_file}")
 
     total_start_time = time.time()
     total_hashes = 0
-
+    total_elapsed_time = 0;
+    total_memory_usage = 0;
+    total_memory_usage_count = 0;
+    
     with open(input_file, "r") as infile, open(output_file, "w") as outfile:
         for line in infile:
             password = line.strip()
             if not password:
                 continue  #skip blank lines
+            max_memory_usage = -1;
 
-            #Time each individual hash
-            hash_start_time = time.time()
-            result = subprocess.run(
+            #Start the process
+            hash_process = subprocess.Popen(
                 [f"./{hash_function}"],
-                input=password,
+                stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True
             )
+            ps_mem = psutil.Process(hash_process.pid)
+
+            hash_start_time = time.time()
+            #Give the password to hash
+            hash_process.stdin.write(password)
+            hash_process.stdin.close()
+
+            #Collect memory usage
+            try:
+               while hash_process.poll() is None:
+                  memory_usage = ps_mem.memory_info().rss
+                  max_memory_usage = max(max_memory_usage, memory_usage)
+            except ps_mem.NoSuchProcess:
+               print("Error: Issue occured while hashing: {password}")
             hash_end_time = time.time()
 
+            #store the summary data
             elapsed = hash_end_time - hash_start_time
+            total_elapsed_time += elapsed
             total_hashes += 1
-
+            total_memory_usage += memory_usage
+            if memory_usage > 0:
+              total_memory_usage_count += 1
+            
+            stdout = hash_process.stdout.read()
             #Save result
-            outfile.write(f"{password} -> {result.stdout.strip()} time: {elapsed:.6f}s\n")
+            outfile.write(f"{password} -> {stdout.strip()} time: {elapsed:.6f}s mem usage: {memory_usage} bytes\n")
 
             #Print to console too
-            print(f"{password} -> {result.stdout.strip()} time: {elapsed:.6f}s")
+            #Commenting out for now, printing slows down execution time a lot
+            #print(f"{password} -> {stdout.strip()} time: {elapsed:.6f}s mem usage: {memory_usage} bytes")
 
         total_end_time = time.time()
         total_elapsed = total_end_time - total_start_time
@@ -59,8 +73,11 @@ def get_function_metrics(hash_function, input_file):
         outfile.write(f"Total Run Time: {total_elapsed:.6f}s\n")
 
     #Print conclusion
-    print(f"\nHashed {total_hashes} passwords with {hash_function}")
+    print(f"Hashed {total_hashes} passwords with {hash_function}")
     print(f"Total Run Time: {total_elapsed:.6f}s")
+    print(f"Total Time Hashing: {total_elapsed_time:.6f}s")
+    print(f"Average Hash Time: {(total_elapsed_time/total_hashes):.6f}s")
+    print(f"Average Memory Usage: {(total_memory_usage/total_memory_usage_count):.2f} bytes\n")
 
 def valid_args(hfs, htf):
   for hf in hfs:

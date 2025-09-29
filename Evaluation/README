@@ -1,6 +1,11 @@
 1. Check amount of time taken to hash a list line by line rather than a whole document at once:
 -> The format of the input file can be seen in 'rockyou_strong.txt' or 'test3.txt'
 -> 'test3.txt' just contains the first 12 passwords of 'rockyou_strong.txt'
+-> Any number of modified hash functions can be tested (at least one)
 -> To run the program
 
     $ python3 metrics.py sha256.exe <file_name>
+
+-> Ex:
+
+   $ python3 metrics.py ../sha256.exe ../sha256_MDHK.exe rockyou_strong.txt
