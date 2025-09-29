@@ -1,9 +1,9 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <errno.h>
-#include <string.h>
+# include <stdio.h>
+# include <stdint.h>
+# include <errno.h>
+# include <string.h>
 
-#include "clean_sha.h"
+# include "clean_sha.h"
 
 void hex(const unsigned char * d)
 {
@@ -12,7 +12,6 @@ void hex(const unsigned char * d)
         printf("%02x", d[i]);
     }
 }
-
 
 int hash_path(const char *path)
 {
@@ -52,7 +51,6 @@ int hash_path(const char *path)
     } 
     else 
     {
-        //printf("SHA256(%s)= ", path); 
         hex(out);
         printf("  %s",path); 
         putchar('\n');
@@ -65,19 +63,19 @@ int hash_path(const char *path)
 int main(int argc, char** argv)
 {
 
-    // File input
     if (argc==1) 
     {
         return hash_path("-");            // read stdin
     }
     
     int rc = 0;
-    
+   
+    // File input
     for(int i = 1; i < argc; i++)
     { 
         rc |= hash_path(argv[i]);
     }
 
-    return rc;
+    return rc; 
 
 }
