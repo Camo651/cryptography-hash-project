@@ -249,18 +249,18 @@ void SHA256_Hash(const void* data, size_t len, uint8_t out[32])
     SHA256_Final(&c, out);
 }
 
-int SHA256_DHK_Stream(FILE *fp, const void *key, size_t key_len, uint8_t out[32]) {
+int SHA256_DHK_Stream(FILE *fp, const void *key, size_t key_len, uint8_t out[32]) 
+{
     if (key_len == 0)
     {
-
-
+        fprintf(stderr, "Key cannot be empty\n");
         return 0;                 // optional guard
     }
     uint8_t first_hash[32];
 
     if (!SHA256_Stream(fp, first_hash))
     {
-        fprintf(stderr, "Key cannot be empty\n");
+        fprintf(stderr, "Error hashing file!\n");
         return 0;    // one pass over the file
     }
 
@@ -272,5 +272,6 @@ int SHA256_DHK_Stream(FILE *fp, const void *key, size_t key_len, uint8_t out[32]
 
     // wipe
     for (size_t i = 0; i < sizeof first_hash; i++) first_hash[i] = 0;
+
     return 1;
 }
