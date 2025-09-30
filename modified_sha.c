@@ -65,6 +65,7 @@ void compress_imp(SHA256_ctx *c, const uint8_t block[64])
     {    
         W[i] = load_32(block + 4*i);   // W[0..15]
     }
+    
 
     /* Working variables a..h initialized from current H. part 6.2 */
     uint32_t a  = c -> h[0],
