@@ -4,7 +4,9 @@
 -> Any number of modified hash functions can be tested (at least one)
 -> To run the program
 
-    $ python3 metrics.py sha256.exe <file_name>
+    $ python3 metrics.py sha256.exe <file_name> (for Window)
+or
+    $ python3 metrics.py sha256 <file_name> (for Linux) (use sha256_MDHK for the other mode)
 
 -> Ex:
 
