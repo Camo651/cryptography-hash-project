@@ -11,3 +11,18 @@ or
 -> Ex:
 
    $ python3 metrics.py ../sha256.exe ../sha256_MDHK.exe rockyou_strong.txt
+
+2. For the benchmark scripts, we do not push the dummy files because of their large size. However they can be
+easily generate using the command:
+
+   $ openssl rand -out rand_100MiB.bin 104857600  (This is for 100MiB, we can do similar for 500, 1GiB, 5GiB, etc.)
+
+3. Allow the script to run:
+
+    $ chmod +x benchmark.sh
+
+4. You can navigate into the script to change the file to test (should be the second line in the script)
+
+5. To run the script:
+
+    $ ./benchmark.sh
